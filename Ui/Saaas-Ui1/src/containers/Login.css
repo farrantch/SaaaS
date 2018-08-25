@@ -1,0 +1,25 @@
+@media all and (min-width: 480px) {
+  .Login {
+    padding: 5px 0;
+  }
+
+  .Login form {
+    margin: 0 auto;
+    max-width: 320px;
+  }
+}
+
+.Login .lander {
+  padding: 5px 0;
+  text-align: center;
+}
+
+.Login .lander h1 {
+  font-family: "Open Sans", sans-serif;
+  font-weight: 600;
+}
+
+.Login .lander p {
+  color: #999;
+}
+

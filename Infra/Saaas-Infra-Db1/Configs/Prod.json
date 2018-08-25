@@ -1,0 +1,7 @@
+{
+    "Parameters" : {
+      "Environment" : "Prod",
+      "StackIdentifier" : "1",
+      "DynamoDbTableCloudAccountsThroughputRead": "3"
+    }
+  }

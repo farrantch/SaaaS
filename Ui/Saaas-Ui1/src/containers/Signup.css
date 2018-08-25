@@ -1,0 +1,30 @@
+@media all and (min-width: 480px) {
+  .Signup {
+    padding: 5px 0;
+  }
+
+  .Signup form {
+    margin: 0 auto;
+    max-width: 320px;
+  }
+}
+
+.Signup form span.help-block {
+  font-size: 14px;
+  padding-bottom: 10px;
+  color: #999;
+}
+
+.Signup .lander {
+  padding: 5px 0;
+  text-align: center;
+}
+
+.Signup .lander h1 {
+  font-family: "Open Sans", sans-serif;
+  font-weight: 600;
+}
+
+.Signup .lander p {
+  color: #999;
+}

@@ -1,0 +1,8 @@
+{
+    "Parameters" : {
+      "Environment" : "Dev",
+      "StackIdentifier" : "1",
+      "DynamoDbScanSize": "10",
+      "DistributionBatchSize": "2"
+    }
+  }

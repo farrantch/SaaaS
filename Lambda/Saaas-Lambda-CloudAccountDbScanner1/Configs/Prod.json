@@ -1,0 +1,8 @@
+{
+    "Parameters" : {
+      "Environment" : "Prod",
+      "StackIdentifier" : "1",
+      "DynamoDbScanSize": "10",
+      "DistributionBatchSize": "1000"
+    }
+  }

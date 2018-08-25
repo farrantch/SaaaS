@@ -1,0 +1,28 @@
+version: 0.2
+            
+phases:
+  install:
+    commands:
+      - printenv
+      - echo Installing NPM...
+      - npm install
+      - echo Installing JSON Editor...
+      - npm install -g json
+  pre_build:
+    commands:
+      - echo Editing Config...
+      - json -I -f src/config.json -e 'this.apiGateway.URL="'$ApiGatewayUrl'"'
+      - json -I -f src/config.json -e 'this.cognito.USER_POOL_ID="'$CognitoUserPoolId'"'
+      - json -I -f src/config.json -e 'this.cognito.APP_CLIENT_ID="'$CognitoUserPoolClientId'"'
+      - json -I -f src/config.json -e 'this.cognito.IDENTITY_POOL_ID="'$CognitoIdentityPoolId'"'
+      - json -I -f src/config.json -e 'this.stripe.PUBLIC_KEY="'$StripePublicKey'"'
+  build:
+    commands:
+      - echo Building Project...
+      - npm run build
+  post_build:
+    commands:
+      - echo Syncing to S3...
+      - aws s3 sync ./build/ s3://$S3BucketDestination --delete --exclude ./build/index.html
+      - aws s3 cp ./build/index.html s3://$S3BucketDestination --cache-control max-age=0 --expires 0
+      - echo Build Complete...

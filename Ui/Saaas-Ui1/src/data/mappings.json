@@ -1,0 +1,276 @@
+{
+    "accountTypes": [{
+        "name": "aws",
+        "alias": "Amazon Web Services",
+        "regionList": [
+            "ap-south-1",
+            "ca-central-1",
+            "eu-central-1",
+            "eu-west-1",
+            "eu-west-2",
+            "eu-west-3",
+            "sa-east-1",
+            "us-east-1",
+            "us-east-2",
+            "us-west-1",
+            "us-west-2"
+
+        ],
+        "regionFeatures": [{
+                "aliasFull": "EC2 Start",
+                "aliasAction": "Start",
+                "group": "ec2",
+                "name": "ec2-start",
+                "featureType": "checkbox",
+                "policies": [{
+                        "Sid": "Ec2Start1",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:StartInstances",
+                            "ec2:CreateTags",
+                            "ec2:DeleteTags"
+                        ],
+                        "Resource": ["arn:aws:ec2:<region>:<account>:instance/*"]
+                    },
+                    {
+                        "Sid": "Ec2Start2",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:DescribeInstances"
+                        ],
+                        "Resource": ["*"]
+                    }
+                ]
+            },
+            {
+                "aliasFull": "EC2 Stop",
+                "aliasAction": "Stop",
+                "group": "ec2",
+                "name": "ec2-stop",
+                "featureType": "checkbox",
+                "policies": [{
+                        "Sid": "Ec2Stop1",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:StopInstances",
+                            "ec2:CreateTags",
+                            "ec2:DeleteTags"
+                        ],
+                        "Resource": ["arn:aws:ec2:<region>:<account>:instance/*"]
+                    },
+                    {
+                        "Sid": "Ec2Stop2",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:DescribeInstances"
+                        ],
+                        "Resource": ["*"]
+                    }
+                ]
+            },
+            {
+                "aliasFull": "EC2 Reboot",
+                "aliasAction": "Reboot",
+                "group": "ec2",
+                "name": "ec2-reboot",
+                "featureType": "checkbox",
+                "policies": [{
+                        "Sid": "Ec2Reboot1",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:RebootInstances",
+                            "ec2:CreateTags",
+                            "ec2:DeleteTags"
+                        ],
+                        "Resource": ["arn:aws:ec2:<region>:<account>:instance/*"]
+                    },
+                    {
+                        "Sid": "Ec2Reboot2",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:DescribeInstances"
+                        ],
+                        "Resource": ["*"]
+                    }
+                ]
+            },
+            {
+                "aliasFull": "EC2 Backup Manager",
+                "aliasAction": "Backup Manager",
+                "group": "ec2",
+                "name": "ec2-backup-manager",
+                "featureType": "checkbox",
+                "policies": [{
+                        "Sid": "Ec2BackupManager1",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:CreateTags",
+                            "ec2:DeleteTags"
+                        ],
+                        "Resource": ["arn:aws:ec2:<region>::image/*"]
+                    },
+                    {
+                        "Sid": "Ec2BackupManager2",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:CreateTags",
+                            "ec2:DeleteTags",
+                            "ec2:CreateSnapshot",
+                            "ec2:DeleteSnapshot"
+                        ],
+                        "Resource": ["arn:aws:ec2:<region>::snapshot/*"]
+                    },
+                    {
+                        "Sid": "Ec2BackupManager3",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:CreateTags",
+                            "ec2:DeleteTags"
+                        ],
+                        "Resource": ["arn:aws:ec2:<region>:<account>:instance/*"]
+                    },
+                    {
+                        "Sid": "Ec2BackupManager4",
+                        "Effect": "Allow",
+                        "Action": [
+                            "ec2:CreateImage",
+                            "ec2:DeregisterImage",
+                            "ec2:ModifyImageAttribute",
+                            "ec2:ModifySnapshotAttribute",
+                            "ec2:ResetImageAttribute",
+                            "ec2:ResetSnapshotAttribute",
+                            "ec2:DeregisterImage",
+                            "ec2:DescribeInstances",
+                            "ec2:DescribeImages",
+                            "ec2:DescribeSnapshots"
+                        ],
+                        "Resource": ["*"]
+                    }
+                ]
+            },
+            {
+                "aliasFull": "RDS Start",
+                "aliasAction": "Start",
+                "group": "rds",
+                "name": "rds-start",
+                "featureType": "checkbox",
+                "policies": [{
+                        "Sid": "RdsStart1",
+                        "Effect": "Allow",
+                        "Action": [
+                            "rds:StartDBInstance",
+                            "rds:AddTagsToResource",
+                            "rds:RemoveTagsFromResource",
+                            "rds:ListTagsForResource"
+                        ],
+                        "Resource": ["arn:aws:rds:<region>:<account>:db:*"]
+                    },
+                    {
+                        "Sid": "RdsStart2",
+                        "Effect": "Allow",
+                        "Action": [
+                            "rds:DescribeDBInstances"
+                        ],
+                        "Resource": ["*"]
+                    }
+                ]
+            },
+            {
+                "aliasFull": "RDS Stop",
+                "aliasAction": "Stop",
+                "group": "rds",
+                "name": "rds-stop",
+                "featureType": "checkbox",
+                "policies": [{
+                        "Sid": "RdsStop1",
+                        "Effect": "Allow",
+                        "Action": [
+                            "rds:StopDBInstance",
+                            "rds:AddTagsToResource",
+                            "rds:RemoveTagsFromResource",
+                            "rds:ListTagsForResource"
+                        ],
+                        "Resource": ["arn:aws:rds:<region>:<account>:db:*"]
+                    },
+                    {
+                        "Sid": "RdsStop2",
+                        "Effect": "Allow",
+                        "Action": [
+                            "rds:DescribeDBInstances"
+                        ],
+                        "Resource": ["*"]
+                    }
+                ]
+            },
+            {
+                "aliasFull": "RDS Reboot",
+                "aliasAction": "Reboot",
+                "group": "rds",
+                "name": "rds-reboot",
+                "featureType": "checkbox",
+                "policies": [{
+                        "Sid": "RdsReboot1",
+                        "Effect": "Allow",
+                        "Action": [
+                            "rds:RebootDBInstance",
+                            "rds:AddTagsToResource",
+                            "rds:RemoveTagsFromResource",
+                            "rds:ListTagsForResource"
+                        ],
+                        "Resource": ["arn:aws:rds:<region>:<account>:db:*"]
+                    },
+                    {
+                        "Sid": "RdsReboot2",
+                        "Effect": "Allow",
+                        "Action": [
+                            "rds:DescribeDBInstances"
+                        ],
+                        "Resource": ["*"]
+                    }
+                ]
+            },
+            {
+                "aliasFull": "RDS Backup Manager",
+                "aliasAction": "Backup Manager",
+                "group": "rds",
+                "name": "rds-backup-manager",
+                "featureType": "checkbox",
+                "policies": [
+                {
+                    "Sid": "RdsBackupManager1",
+                    "Effect": "Allow",
+                    "Action": [
+                        "rds:AddTagsToResource",
+                        "rds:RemoveTagsFromResource",
+                        "rds:CreateDBSnapshot",
+                        "rds:ListTagsForResource",
+                        "rds:DescribeDBSnapshots"
+                    ],
+                    "Resource": ["arn:aws:rds:<region>:<account>:db:*"]
+                },
+                {
+                    "Sid": "RdsBackupManager2",
+                    "Effect": "Allow",
+                    "Action": [
+                        "rds:AddTagsToResource",
+                        "rds:RemoveTagsFromResource",
+                        "rds:ListTagsForResource",
+                        "rds:CreateDBSnapshot",
+                        "rds:DeleteDBSnapshot",
+                        "rds:DescribeDBSnapshots"
+                    ],
+                    "Resource": ["arn:aws:rds:<region>:<account>:snapshot:*"]
+                },
+                {
+                    "Sid": "RdsBackupManager3",
+                    "Effect": "Allow",
+                    "Action": [
+                        "rds:DescribeDBSnapshots"
+                    ],
+                    "Resource": ["*"]
+                }]
+            }
+        ],
+        "globalFeatures": []
+    }]
+}

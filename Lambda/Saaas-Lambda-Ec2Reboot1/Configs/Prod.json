@@ -1,0 +1,6 @@
+{
+    "Parameters" : {
+      "Environment" : "Prod",
+      "StackIdentifier" : "1"
+    }
+  }

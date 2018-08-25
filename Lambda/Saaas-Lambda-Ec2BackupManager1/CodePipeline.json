@@ -1,0 +1,257 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Creates a pipeline for AmiManager.",
+  "Resources": {
+    "IamPolicyCodePipeline": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "*",
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "IamPolicyCloudFormation": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "*",
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "IamPolicyCodeBuild": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "*",
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "IamRoleCodePipeline": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "codepipeline.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "IamPolicyCodePipeline"
+          }
+        ]
+      }
+    },
+    "IamRoleCloudFormation": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "cloudformation.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "IamPolicyCloudFormation"
+          }
+        ]
+      }
+    },
+    "IamRoleCodeBuild": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "codebuild.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "IamPolicyCodeBuild"
+          }
+        ]
+      }
+    },
+    "CodeCommit": {
+      "Type": "AWS::CodeCommit::Repository",
+      "Properties": {
+        "RepositoryDescription": "Repository created by CodePipeline",
+        "RepositoryName": { "Ref": "AWS::StackName" }
+      }
+    },
+    "S3BucketSource": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "AccessControl": "Private",
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        }
+      }
+    },
+    "S3BucketArtifacts": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "AccessControl": "Private"
+      }
+    },
+    "CodePipeline": {
+      "Type": "AWS::CodePipeline::Pipeline",
+      "Properties": {
+        "ArtifactStore": {
+          "Type": "S3",
+          "Location": { "Ref": "S3BucketArtifacts" }
+        },
+        "RestartExecutionOnUpdate": "false",
+        "RoleArn": {
+          "Fn::GetAtt": ["IamRoleCodePipeline", "Arn"]
+        },
+        "Name": { "Ref": "AWS::StackName" },
+        "Stages": [
+          {
+            "Name": "Source",
+            "Actions": [
+              {
+                "ActionTypeId": {
+                  "Category": "Source",
+                  "Owner": "AWS",
+                  "Provider": "CodeCommit",
+                  "Version": "1"
+                },
+                "Configuration": {
+                  "RepositoryName": {
+                    "Fn::GetAtt": ["CodeCommit", "Name"]
+                  },
+                  "BranchName": "master"
+                },
+                "Name": "CodeCommit",
+                "OutputArtifacts": [
+                  {
+                    "Name": "SourceOutput"
+                  }
+                ],
+                "RunOrder": 1
+              }
+            ]
+          },
+          {
+            "Name": "Deploy",
+            "Actions": [
+              {
+                "ActionTypeId": {
+                  "Category": "Deploy",
+                  "Owner": "AWS",
+                  "Provider": "CloudFormation",
+                  "Version": "1"
+                },
+                "Configuration": {
+                  "ActionMode": "REPLACE_ON_FAILURE",
+                  "Capabilities": "CAPABILITY_IAM",
+                  "RoleArn": {
+                    "Fn::GetAtt": ["IamRoleCloudFormation", "Arn"]
+                  },
+                  "StackName": { "Fn::Sub": [ "${ParentStackName}-Dev", { "ParentStackName": {"Ref" : "AWS::StackName" }} ]},
+                  "TemplatePath": "SourceOutput::CloudFormation.json",
+                  "TemplateConfiguration": "SourceOutput::Configs/Dev.json",
+                  "ParameterOverrides": "{ \"S3BucketName\" : { \"Fn::GetArtifactAtt\" : [\"SourceOutput\", \"BucketName\"]}, \"S3ObjectKey\" : { \"Fn::GetArtifactAtt\" : [\"SourceOutput\", \"ObjectKey\"]}}"
+                },
+                "Name": "DeployCloudFormation",
+                "InputArtifacts": [
+                  {
+                    "Name": "SourceOutput"
+                  }
+                ],
+                "RunOrder": 1
+              }
+            ]
+          },
+          {
+            "Name": "Approve",
+            "Actions": [{
+              "ActionTypeId": {
+                "Category": "Approval",
+                "Owner": "AWS",
+                "Provider": "Manual",
+                "Version": "1"
+              },
+              "Name": "ManualApproval",
+              "RunOrder": 1
+            }]
+          },
+          {
+            "Name": "Prod",
+            "Actions": [
+              {
+                "ActionTypeId": {
+                  "Category": "Deploy",
+                  "Owner": "AWS",
+                  "Provider": "CloudFormation",
+                  "Version": "1"
+                },
+                "Configuration": {
+                  "ActionMode": "REPLACE_ON_FAILURE",
+                  "Capabilities": "CAPABILITY_IAM",
+                  "RoleArn": {
+                    "Fn::GetAtt": ["IamRoleCloudFormation", "Arn"]
+                  },
+                  "StackName": { "Fn::Sub": [ "${StackName}-Prod", { "StackName": {"Ref" : "AWS::StackName" }} ]},
+                  "TemplatePath": "SourceOutput::CloudFormation.json",
+                  "TemplateConfiguration": "SourceOutput::Configs/Prod.json",
+                  "ParameterOverrides": "{ \"S3BucketName\" : { \"Fn::GetArtifactAtt\" : [\"SourceOutput\", \"BucketName\"]}, \"S3ObjectKey\" : { \"Fn::GetArtifactAtt\" : [\"SourceOutput\", \"ObjectKey\"]}}"
+                },
+                "Name": "DeployCloudFormation",
+                "InputArtifacts": [
+                  {
+                    "Name": "SourceOutput"
+                  }
+                ],
+                "RunOrder": 1
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {}
+}

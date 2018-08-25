@@ -1,0 +1,120 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Template for Rds Backup Manager.",
+  "Parameters": {
+    "Environment": {
+      "Type": "String",
+      "Default": "Dev"
+    },
+    "StackIdentifier": {
+      "Type": "String",
+      "Default": "1"
+    },
+    "S3BucketName" : {
+      "Type": "String"
+     },
+    "S3ObjectKey": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "IamPolicy": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+              "Effect": "Allow",
+              "Action": ["logs:*"],
+              "Resource": "arn:aws:logs:*:*:*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": "sts:AssumeRole",
+              "Resource": "arn:aws:iam::*:role/SaaaS_Cloud"
+            },
+            {
+              "Effect": "Allow",
+              "Action": "dynamodb:putItem",
+              "Resource": {
+                "Fn::Sub": [
+                  "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}", {
+                    "TableName": {
+                      "Fn::ImportValue": {
+                        "Fn::Sub": "Saaas-DynamoDbTableName-Transactions-${Environment}-1"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "IamRole": {
+      "DependsOn": "IamPolicy",
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "IamPolicy"
+          }
+        ]
+      }
+    },  
+    "SnsTopic": {
+      "Type": "AWS::SNS::Topic"
+    },
+    "Lambda": {
+      "DependsOn": ["IamRole","SnsTopic"],
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": { "Ref": "S3BucketName" },
+          "S3Key": { "Ref": "S3ObjectKey" }
+        },
+        "Handler": "RdsBackupManager.lambda_handler",
+        "Role": {
+          "Fn::GetAtt": ["IamRole", "Arn"]
+        },
+        "Runtime": "python3.6",
+        "Timeout": "300",
+        "Environment": {
+            "Variables": {
+              "DynamoDbTableNameTransactions": {
+                "Fn::ImportValue": {
+                  "Fn::Sub": "Saaas-DynamoDbTableName-Transactions-${Environment}-1"
+                }
+              }
+            }
+        },
+        "Description": "Automatically manages the creation/deletion/modifying/scheduling of RDS snapshots."
+      }
+    }
+  },
+  "Outputs": {
+    "LambdaArnRdsBackupManager": {
+      "Value": {
+        "Fn::GetAtt": ["Lambda", "Arn"]
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "Saaas-LambdaArn-RdsBackupManager-${Environment}-${StackIdentifier}"
+        }
+      }
+    }
+  }
+}

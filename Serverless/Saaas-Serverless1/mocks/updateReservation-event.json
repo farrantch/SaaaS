@@ -1,0 +1,11 @@
+{
+  "body": "{\"content\":\"new world\",\"attachment\":\"new.jpg\",\"room\":\"newsnaphaus\",\"reservationDate\":\"1509814800\"}",
+  "pathParameters": {
+    "id": "599d58b0-abd4-11e7-9750-15f62fb82f45"
+  },
+  "requestContext": {
+    "identity": {
+      "cognitoIdentityId": "USER-SUB-1234"
+    }
+  }
+}

@@ -1,0 +1,161 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: Saaas-Serverless
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+# Use serverless-webpack plugin to transpile ES6/ES7
+plugins:
+  - serverless-webpack
+
+# Enable auto-packing of external modules
+custom:
+  webpackIncludeModules: true
+
+provider:
+  name: aws
+  runtime: nodejs6.10
+
+# you can overwrite defaults here
+#  stage: dev
+#  region: us-east-1
+  stage: ${opt:stage}
+  region: us-east-1
+  environment:
+    tableNameCloudAccounts:
+      'Fn::ImportValue': 'Saaas-DynamoDbTableName-CloudAccounts-${opt:stage}-1'
+    tableNameTransactions:
+      'Fn::ImportValue': 'Saaas-DynamoDbTableName-Transactions-${opt:stage}-1'
+    tableNameUsers:
+      'Fn::ImportValue': 'Saaas-DynamoDbTableName-Users-${opt:stage}-1'
+
+# 'iamRoleStatement' defines the permission policy for the Lambda function.
+# In this case Lambda functions are granted with permissions to access DynamoDB.
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:us-east-1:*:*"
+
+functions:
+
+# -----------------  Accounts  --------------------
+
+  createAccount:
+    handler: Accounts/createAccount.main
+    events:
+      - http:
+          path: accounts
+          method: post
+          cors: true
+          authorizer: aws_iam
+    environment:
+
+  getAccount:
+    handler: Accounts/getAccount.main
+    events:
+      - http:
+          path: accounts/{id}
+          method: get
+          cors: true
+          authorizer: aws_iam
+          
+  listAccounts:
+    handler: Accounts/listAccounts.main
+    events:
+      - http:
+          path: accounts
+          method: get
+          cors: true
+          authorizer: aws_iam
+
+  updateAccount:
+    handler: Accounts/updateAccount.main
+    events:
+      - http:
+          path: accounts/{id}
+          method: put
+          cors: true
+          authorizer: aws_iam
+
+  deleteAccount:
+    handler: Accounts/deleteAccount.main
+    events:
+      - http:
+          path: accounts/{id}
+          method: delete
+          cors: true
+          authorizer: aws_iam
+  
+# --------------------  Users  --------------------
+  createUser:
+    handler: Users/createUser.main
+    events:
+      - http:
+          path: users
+          method: post
+          cors: true
+          authorizer: aws_iam
+
+  getUser:
+    handler: Users/getUser.main
+    events:
+      - http:
+          path: users/{id}
+          method: get
+          cors: true
+          authorizer: aws_iam
+
+# --------------------  Payment Methods  --------------------
+  createPaymentMethod:
+    handler: PaymentMethods/createPaymentMethod.main
+    environment:
+      StripeSecretKey: ${ssm:/Saaas-Stripe-SecretKey-${opt:stage}~true}
+    events:
+      - http:
+          path: paymentmethods
+          method: post
+          cors: true
+          authorizer: aws_iam
+
+# ------------------- Transactions -------------------------
+  listTransactions:
+    handler: Transactions/listTransactionsYearMonth.main
+    events:
+      - http:
+          path: transactions/yearmonth/{yearMonth}
+          method: get
+          cors: true
+          authorizer: aws_iam
+
+# ------------------------- OUTPUTS -------------------------------
+
+resources:
+  Outputs:
+    ApiGatewayEndpoint:
+      Value: { "Fn::Join" : ["", [ "https://", { "Ref" : "ApiGatewayRestApi" }, ".execute-api.${self:provider.region}.amazonaws.com/${opt:stage}" ] ]  }
+      Export:
+        Name: 'Saaas-ApiGatewayEndpoint-${opt:stage}-1'
+    ApiGatewayRestApi:
+      Value: { "Ref": "ApiGatewayRestApi" }
+      Export:
+        Name: 'Saaas-RestApi-${opt:stage}-1'

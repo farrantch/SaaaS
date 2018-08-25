@@ -1,0 +1,8 @@
+.NewAccount form {
+  padding-bottom: 15px;
+}
+
+.NewAccount form textarea {
+  height: 300px;
+  font-size: 24px;
+}

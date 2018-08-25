@@ -1,0 +1,339 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "SaaaS User Management Infrastructure",
+    "Parameters": {
+        "Environment": {
+            "Type": "String",
+            "Default": "Dev"
+        },
+        "StackIdentifier": {
+            "Type": "String",
+            "Default": "1"
+        }
+    },
+    "Resources": {
+        "IamManagedPolicySms": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "Description": "Allows sending SMS text messages.",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Action": [
+                            "sns:publish"
+                        ],
+                        "Resource": [
+                            "*"
+                        ]
+                    }]
+                }
+            }
+        },
+        "IamRoleSms": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": "cognito-idp.amazonaws.com"
+                        },
+                        "Action": "sts:AssumeRole"
+                    }]
+                },
+                "ManagedPolicyArns": [{
+                    "Ref": "IamManagedPolicySms"
+                }]
+            }
+        },
+        "SnsSmsTopic": {
+            "Type": "AWS::SNS::Topic"
+        },
+        "CognitoUserPool": {
+            "Type": "AWS::Cognito::UserPool",
+            "Properties": {
+                "AdminCreateUserConfig": {
+                    "AllowAdminCreateUserOnly": false,
+                    "UnusedAccountValidityDays": 7
+                },
+                "AliasAttributes": ["email"],
+                "AutoVerifiedAttributes": ["email"],
+                "DeviceConfiguration": {
+                    "ChallengeRequiredOnNewDevice": false,
+                    "DeviceOnlyRememberedOnUserPrompt": false
+                },
+                "MfaConfiguration": "OFF",
+                "Policies": {
+                    "PasswordPolicy": {
+                        "MinimumLength": 8,
+                        "RequireLowercase": true,
+                        "RequireNumbers": true,
+                        "RequireSymbols": false,
+                        "RequireUppercase": true
+                    }
+                },
+                "UserPoolName": {
+                    "Ref": "AWS::StackName"
+                },
+                "Schema": [{
+                        "AttributeDataType": "String",
+                        "DeveloperOnlyAttribute": false,
+                        "Mutable": true,
+                        "Name": "email",
+                        "StringAttributeConstraints": {
+                            "MaxLength": "50",
+                            "MinLength": "4"
+                        },
+                        "Required": true
+                    },
+                    {
+                        "AttributeDataType": "String",
+                        "DeveloperOnlyAttribute": false,
+                        "Mutable": true,
+                        "Name": "given_name",
+                        "StringAttributeConstraints": {
+                            "MaxLength": "50",
+                            "MinLength": "2"
+                        },
+                        "Required": true
+                    },
+                    {
+                        "AttributeDataType": "String",
+                        "DeveloperOnlyAttribute": false,
+                        "Mutable": true,
+                        "Name": "family_name",
+                        "StringAttributeConstraints": {
+                            "MaxLength": "50",
+                            "MinLength": "2"
+                        },
+                        "Required": true
+                    },
+                    {
+                        "AttributeDataType": "String",
+                        "DeveloperOnlyAttribute": false,
+                        "Mutable": true,
+                        "Name": "phone_number",
+                        "StringAttributeConstraints": {
+                            "MaxLength": "50",
+                            "MinLength": "2"
+                        },
+                        "Required": true
+                    },
+                    {
+                        "AttributeDataType": "String",
+                        "DeveloperOnlyAttribute": false,
+                        "Mutable": true,
+                        "Name": "locale",
+                        "StringAttributeConstraints": {
+                            "MaxLength": "50",
+                            "MinLength": "2"
+                        },
+                        "Required": true
+                    },
+                    {
+                        "AttributeDataType": "Number",
+                        "DeveloperOnlyAttribute": false,
+                        "Mutable": true,
+                        "Name": "updated_at",
+                        "Required": true
+                    },
+                    {
+                        "AttributeDataType": "String",
+                        "DeveloperOnlyAttribute": false,
+                        "Mutable": true,
+                        "Name": "birthdate",
+                        "StringAttributeConstraints": {
+                            "MaxLength": "50",
+                            "MinLength": "2"
+                        },
+                        "Required": true
+                    }
+                ]
+            }
+        },
+        "CognitoUserPoolClient": {
+            "Type": "AWS::Cognito::UserPoolClient",
+            "Properties": {
+                "GenerateSecret": false,
+                "RefreshTokenValidity": 30,
+                "UserPoolId": {
+                    "Ref": "CognitoUserPool"
+                }
+            }
+        },
+        "CognitoIdentityPool": {
+            "Type": "AWS::Cognito::IdentityPool",
+            "Properties": {
+                "AllowUnauthenticatedIdentities": false,
+                "CognitoIdentityProviders": [{
+                    "ClientId": {
+                        "Ref": "CognitoUserPoolClient"
+                    },
+                    "ProviderName": {
+                        "Fn::GetAtt": ["CognitoUserPool", "ProviderName"]
+                    },
+                    "ServerSideTokenCheck": true
+                }]
+            }
+        },
+        "IamManagedPolicyUnAuth": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Action": [
+                            "mobileanalytics:PutEvents",
+                            "cognito-sync:*"
+                        ],
+                        "Resource": [
+                            "*"
+                        ]
+                    }]
+                }
+            }
+        },
+        "IamRoleUnAuth": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Federated": "cognito-identity.amazonaws.com"
+                        },
+                        "Action": "sts:AssumeRoleWithWebIdentity",
+                        "Condition": {
+                            "StringEquals": {
+                                "cognito-identity.amazonaws.com:aud": {
+                                    "Ref": "CognitoIdentityPool"
+                                }
+                            },
+                            "ForAnyValue:StringLike": {
+                                "cognito-identity.amazonaws.com:amr": "unauthenticated"
+                            }
+                        }
+                    }]
+                },
+                "ManagedPolicyArns": [{
+                    "Ref": "IamManagedPolicyUnAuth"
+                }]
+            }
+        },
+        "IamManagedPolicyAuth": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                            "Effect": "Allow",
+                            "Action": [
+                                "mobileanalytics:PutEvents",
+                                "cognito-sync:*",
+                                "cognito-identity:*"
+                            ],
+                            "Resource": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "execute-api:Invoke"
+                            ],
+                            "Resource": [{
+                                "Fn::Sub": ["arn:aws:execute-api:${AWS::Region}:*:${RestApi}/*", {
+                                    "RestApi": {
+                                        "Fn::ImportValue": {
+                                            "Fn::Sub": "Saaas-RestApi-${Environment}-1"
+                                        }
+                                    }
+                                }]
+                            }]
+                        }
+                    ]
+                }
+            }
+        },
+        "IamRoleAuth": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Federated": "cognito-identity.amazonaws.com"
+                        },
+                        "Action": "sts:AssumeRoleWithWebIdentity",
+                        "Condition": {
+                            "StringEquals": {
+                                "cognito-identity.amazonaws.com:aud": {
+                                    "Ref": "CognitoIdentityPool"
+                                }
+                            },
+                            "ForAnyValue:StringLike": {
+                                "cognito-identity.amazonaws.com:amr": "authenticated"
+                            }
+                        }
+                    }]
+                },
+                "ManagedPolicyArns": [{
+                    "Ref": "IamManagedPolicyAuth"
+                }]
+            }
+        },
+        "CognitoIdentityPoolRoleAttachment": {
+            "Type": "AWS::Cognito::IdentityPoolRoleAttachment",
+            "Properties": {
+                "IdentityPoolId": {
+                    "Ref": "CognitoIdentityPool"
+                },
+                "Roles": {
+                    "authenticated": {
+                        "Fn::GetAtt": ["IamRoleAuth", "Arn"]
+                    },
+                    "unauthenticated": {
+                        "Fn::GetAtt": ["IamRoleUnAuth", "Arn"]
+                    }
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "CognitoUserPoolId": {
+            "Value": {
+                "Ref": "CognitoUserPool"
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "Saaas-CognitoUserPoolId-${Environment}-${StackIdentifier}"
+                }
+            }
+        },
+        "CognitoUserPoolClientId": {
+            "Value": {
+                "Ref": "CognitoUserPoolClient"
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "Saaas-CognitoUserPoolClientId-${Environment}-${StackIdentifier}"
+                }
+            }
+        },
+        "CognitoIdentityPoolId": {
+            "Value": {
+                "Ref": "CognitoIdentityPool"
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "Saaas-CognitoIdentityPoolId-${Environment}-${StackIdentifier}"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,361 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Creates a pipeline for the UI.",
+  "Resources": {
+    "IamPolicyCodePipeline": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "*",
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "IamPolicyCloudFormation": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "*",
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "IamPolicyCodeBuild": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "*",
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "IamRoleCodePipeline": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "codepipeline.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "IamPolicyCodePipeline"
+          }
+        ]
+      }
+    },
+    "IamRoleCloudFormation": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "cloudformation.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "IamPolicyCloudFormation"
+          }
+        ]
+      }
+    },
+    "IamRoleCodeBuild": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "codebuild.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "IamPolicyCodeBuild"
+          }
+        ]
+      }
+    },
+    "CodeCommit": {
+      "Type": "AWS::CodeCommit::Repository",
+      "Properties": {
+        "RepositoryDescription": "Repository created by CodePipeline",
+        "RepositoryName": { "Ref": "AWS::StackName" }
+      }
+    },
+    "S3BucketSource": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "AccessControl": "Private",
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        }
+      }
+    },
+    "S3BucketArtifacts": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "AccessControl": "Private"
+      }
+    },
+    "CodeBuildDev": {
+      "Type" : "AWS::CodeBuild::Project",
+      "Properties" : {
+        "Artifacts" : {
+          "Type" : "CODEPIPELINE"
+        },
+        "Environment":
+        {
+          "ComputeType" : "BUILD_GENERAL1_SMALL",
+          "Image" : "aws/codebuild/nodejs:6.3.1",
+          "EnvironmentVariables": [
+            {
+              "Name": "S3BucketDestination",
+              "Type": "PLAINTEXT",
+              "Value": { "Fn::ImportValue": "Saaas-S3BucketName-Ui-Dev-1" }
+            },
+            {
+              "Name": "ApiGatewayUrl",
+              "Type": "PLAINTEXT",
+              "Value": { "Fn::ImportValue": "Saaas-ApiGatewayEndpoint-Dev-1" }
+            },
+            {
+              "Name": "CognitoUserPoolId",
+              "Type": "PLAINTEXT",
+              "Value": { "Fn::ImportValue": "Saaas-CognitoUserPoolId-Dev-3" }
+            },
+            {
+              "Name": "CognitoUserPoolClientId",
+              "Type": "PLAINTEXT",
+              "Value": { "Fn::ImportValue": "Saaas-CognitoUserPoolClientId-Dev-3" }
+            },
+            {
+              "Name": "CognitoIdentityPoolId",
+              "Type": "PLAINTEXT",
+              "Value": { "Fn::ImportValue": "Saaas-CognitoIdentityPoolId-Dev-3" }
+            },
+            {
+              "Name": "StripePublicKey",
+              "Type": "PLAINTEXT",
+              "Value": "pk_test_yDDg994Tr2wo2xz2yopKIVT5"
+            },
+            {
+              "Name": "Environment",
+              "Type": "PLAINTEXT",
+              "Value": "Dev"
+            }
+          ],
+          "PrivilegedMode" : false,
+          "Type" : "LINUX_CONTAINER"
+        },
+        "Name" : { "Fn::Sub": [ "${StackName}-Dev", { "StackName": { "Ref": "AWS::StackName" }}]},
+        "ServiceRole" : {
+          "Fn::GetAtt": ["IamRoleCodeBuild", "Arn"]
+        },
+        "Source" : {
+          "Type" : "CODEPIPELINE"
+        },
+        "TimeoutInMinutes" : "5"
+      }
+    },
+    "CodeBuildProd": {
+      "Type" : "AWS::CodeBuild::Project",
+      "Properties" : {
+        "Artifacts" : {
+          "Type" : "CODEPIPELINE"
+        },
+        "Environment":
+        {
+          "ComputeType" : "BUILD_GENERAL1_SMALL",
+          "Image" : "aws/codebuild/nodejs:6.3.1",
+          "EnvironmentVariables": [
+            {
+              "Name": "S3BucketDestination",
+              "Type": "PLAINTEXT",
+              "Value": { "Fn::ImportValue": "Saaas-S3BucketName-Ui-Prod-1" }
+            },
+            {
+              "Name": "ApiGatewayUrl",
+              "Type": "PLAINTEXT",
+              "Value": { "Fn::ImportValue": "Saaas-ApiGatewayEndpoint-Prod-1" }
+            },
+            {
+              "Name": "CognitoUserPoolId",
+              "Type": "PLAINTEXT",
+              "Value": { "Fn::ImportValue": "Saaas-CognitoUserPoolId-Prod-3" }
+            },
+            {
+              "Name": "CognitoUserPoolClientId",
+              "Type": "PLAINTEXT",
+              "Value": { "Fn::ImportValue": "Saaas-CognitoUserPoolClientId-Prod-3" }
+            },
+            {
+              "Name": "CognitoIdentityPoolId",
+              "Type": "PLAINTEXT",
+              "Value": { "Fn::ImportValue": "Saaas-CognitoIdentityPoolId-Prod-3" }
+            },
+            {
+              "Name": "StripePublicKey",
+              "Type": "PLAINTEXT",
+              "Value": "pk_live_rdQ1THE1UAIG10NcRO4AigBY"
+            },
+            {
+              "Name": "Environment",
+              "Type": "PLAINTEXT",
+              "Value": "Prod"
+            }
+          ],
+          "PrivilegedMode" : false,
+          "Type" : "LINUX_CONTAINER"
+        },
+        "Name" : { "Fn::Sub": [ "${StackName}-Prod", { "StackName": { "Ref": "AWS::StackName" }}]},
+        "ServiceRole" : {
+          "Fn::GetAtt": ["IamRoleCodeBuild", "Arn"]
+        },
+        "Source" : {
+          "Type" : "CODEPIPELINE"
+        },
+        "TimeoutInMinutes" : "5"
+      }
+    },
+    "CodePipeline": {
+      "Type": "AWS::CodePipeline::Pipeline",
+      "Properties": {
+        "ArtifactStore": {
+          "Type": "S3",
+          "Location": { "Ref": "S3BucketArtifacts" }
+        },
+        "RestartExecutionOnUpdate": "false",
+        "RoleArn": {
+          "Fn::GetAtt": ["IamRoleCodePipeline", "Arn"]
+        },
+        "Name": { "Ref": "AWS::StackName" },
+        "Stages": [
+          {
+            "Name": "Source",
+            "Actions": [
+              {
+                "ActionTypeId": {
+                  "Category": "Source",
+                  "Owner": "AWS",
+                  "Provider": "CodeCommit",
+                  "Version": "1"
+                },
+                "Configuration": {
+                  "RepositoryName": {
+                    "Fn::GetAtt": ["CodeCommit", "Name"]
+                  },
+                  "BranchName": "master"
+                },
+                "Name": "CodeCommit",
+                "OutputArtifacts": [
+                  {
+                    "Name": "SourceOutput"
+                  }
+                ],
+                "RunOrder": 1
+              }
+            ]
+          },
+          {
+            "Name": "Dev",
+            "Actions": [
+              {
+                "ActionTypeId": {
+                  "Category": "Build",
+                  "Owner": "AWS",
+                  "Provider": "CodeBuild",
+                  "Version": "1"
+                },
+                "Configuration": {
+                  "ProjectName": { "Ref": "CodeBuildDev" }
+                },
+                "Name": "ReactBuild",
+                "InputArtifacts": [
+                  {
+                    "Name": "SourceOutput"
+                  }
+                ],
+                "RunOrder": 1
+              }
+            ]
+          },
+          {
+            "Name": "Approve",
+            "Actions": [{
+              "ActionTypeId": {
+                "Category": "Approval",
+                "Owner": "AWS",
+                "Provider": "Manual",
+                "Version": "1"
+              },
+              "Name": "ManualApproval",
+              "RunOrder": 1
+            }]
+          },
+          {
+            "Name": "Prod",
+            "Actions": [
+              {
+                "ActionTypeId": {
+                  "Category": "Build",
+                  "Owner": "AWS",
+                  "Provider": "CodeBuild",
+                  "Version": "1"
+                },
+                "Configuration": {
+                  "ProjectName": { "Ref": "CodeBuildProd" }
+                },
+                "Name": "ReactBuild",
+                "InputArtifacts": [
+                  {
+                    "Name": "SourceOutput"
+                  }
+                ],
+                "RunOrder": 1
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {}
+}

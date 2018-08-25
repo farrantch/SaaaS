@@ -1,0 +1,15 @@
+{
+		"apiGateway": {
+			"URL": "https://xxxxxxx.execute-api.us-east-1.amazonaws.com/xxx",
+			"REGION": "us-east-1"
+		},
+		"cognito": {
+			"USER_POOL_ID": "us-east-1_xxxxxxx",
+			"APP_CLIENT_ID": "xxxxxxxxxxxxxxxxxxxxxxxx",
+			"REGION": "us-east-1",
+			"IDENTITY_POOL_ID": "us-east-1:xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+		},
+		"stripe": {
+			"PUBLIC_KEY": "pk_xxxx_xxxxxxxxxxxxxxxxx"
+		}
+}

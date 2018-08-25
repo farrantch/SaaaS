@@ -1,0 +1,228 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Template for creating the S3 Ui Bucket",
+    "Parameters": {
+        "Environment": {
+            "Type": "String",
+            "Default": "Dev"
+        },
+        "StackIdentifier": {
+            "Type": "String",
+            "Default": "1"
+        },
+        "EndpointUrl": {
+            "Type": "String",
+            "Default": "dev.saaas.cloud"
+        }
+    },
+    "Resources": {
+        "S3BucketUi": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "AccessControl": "PublicRead",
+                "WebsiteConfiguration": {
+                    "IndexDocument": "index.html",
+                    "ErrorDocument": "index.html"
+                }
+            }
+        },
+        "S3BucketRedirect": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "AccessControl": "PublicRead",
+                "WebsiteConfiguration": {
+                    "RedirectAllRequestsTo": {
+                        "HostName": {
+                            "Fn::Sub": "www.${EndpointUrl}"
+                        },
+                        "Protocol": "https"
+                    }
+                }
+            }
+        },
+        "S3BucketPolicyUi": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Sid": "PublicReadGetObject",
+                        "Effect": "Allow",
+                        "Principal": "*",
+                        "Action": [
+                            "s3:GetObject"
+                        ],
+                        "Resource": [{
+                            "Fn::Sub": ["${BucketArn}/*", {
+                                "BucketArn": {
+                                    "Fn::GetAtt": ["S3BucketUi", "Arn"]
+                                }
+                            }]
+                        }]
+                    }]
+                },
+                "Bucket": {
+                    "Ref": "S3BucketUi"
+                }
+            }
+        },
+        "S3BucketPolicyRedirect": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Sid": "PublicReadGetObject",
+                        "Effect": "Allow",
+                        "Principal": "*",
+                        "Action": [
+                            "s3:GetObject"
+                        ],
+                        "Resource": [{
+                            "Fn::Sub": ["${BucketArn}/*", {
+                                "BucketArn": {
+                                    "Fn::GetAtt": ["S3BucketRedirect", "Arn"]
+                                }
+                            }]
+                        }]
+                    }]
+                },
+                "Bucket": {
+                    "Ref": "S3BucketRedirect"
+                }
+            }
+        },
+        "CertificateUI": {
+            "Type": "AWS::CertificateManager::Certificate",
+            "Properties": {
+                "DomainName": {
+                    "Fn::Sub": "www.${EndpointUrl}"
+                },
+                "SubjectAlternativeNames": [{
+                    "Fn::Sub": "www.${EndpointUrl}"
+                }]
+            }
+        },
+        "CertificateRedirect": {
+            "Type": "AWS::CertificateManager::Certificate",
+            "Properties": {
+                "DomainName": {
+                    "Fn::Sub": "${EndpointUrl}"
+                },
+                "SubjectAlternativeNames": [{
+                    "Fn::Sub": "${EndpointUrl}"
+                }]
+            }
+        },
+        "CloudFrontUi": {
+            "Type": "AWS::CloudFront::Distribution",
+            "Properties": {
+                "DistributionConfig": {
+                    "Aliases": [
+                        { "Fn::Sub": "www.${EndpointUrl}"}
+                    ],
+                    "DefaultCacheBehavior": {
+                        "AllowedMethods": ["GET", "HEAD"],
+                        "CachedMethods": ["HEAD", "GET"],
+                        "Compress": false,
+                        "DefaultTTL": 86400,
+                        "ForwardedValues": {
+                            "QueryString": false
+                        },
+                        "MaxTTL": 31536000,
+                        "TargetOriginId": "1",
+                        "ViewerProtocolPolicy": "redirect-to-https"
+                    },
+                    "Enabled": true,
+                    "HttpVersion": "http2",
+                    "IPV6Enabled": true,
+                    "Origins": [{
+                        "DomainName": {
+                            "Fn::Sub": [
+                                "${BucketName}.s3-website-${AWS::Region}.amazonaws.com",
+                                {
+                                    "BucketName": {
+                                        "Ref": "S3BucketUi"
+                                    }
+                                }
+                            ]
+                        },
+                        "Id": "1",
+                        "CustomOriginConfig": {
+                            "HTTPPort": 80,
+                            "OriginProtocolPolicy": "http-only"
+                        }
+                    }],
+                    "PriceClass": "PriceClass_100",
+                    "ViewerCertificate": {
+                        "AcmCertificateArn": {
+                            "Ref": "CertificateUI"
+                        },
+                        "SslSupportMethod": "sni-only"
+                    }
+                }
+            }
+        },
+        "CloudFrontRedirect": {
+            "Type": "AWS::CloudFront::Distribution",
+            "Properties": {
+                "DistributionConfig": {
+                    "Aliases": [
+                        { "Fn::Sub": "${EndpointUrl}"}
+                    ],
+                    "DefaultCacheBehavior": {
+                        "AllowedMethods": ["GET", "HEAD"], 
+                        "CachedMethods": ["HEAD", "GET"],
+                        "Compress": false,
+                        "DefaultTTL": 86400,
+                        "ForwardedValues": {
+                            "QueryString": false
+                        },
+                        "MaxTTL": 31536000,
+                        "TargetOriginId": "1",
+                        "ViewerProtocolPolicy": "redirect-to-https"
+                    },
+                    "Enabled": true,
+                    "HttpVersion": "http2",
+                    "IPV6Enabled": true,
+                    "Origins": [{
+                        "DomainName": {
+                            "Fn::Sub": [
+                                "${BucketName}.s3-website-${AWS::Region}.amazonaws.com",
+                                {
+                                    "BucketName": {
+                                        "Ref": "S3BucketRedirect"
+                                    }
+                                }
+                            ]
+                        },
+                        "Id": "1",
+                        "CustomOriginConfig": {
+                            "HTTPPort": 80,
+                            "OriginProtocolPolicy": "http-only"
+                        }
+                    }],
+                    "PriceClass": "PriceClass_100",
+                    "ViewerCertificate": {
+                        "AcmCertificateArn": {
+                            "Ref": "CertificateRedirect"
+                        },
+                        "SslSupportMethod": "sni-only"
+                    }
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "S3BucketNameUi": {
+            "Value": {
+                "Ref": "S3BucketUi"
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "Saaas-S3BucketName-Ui-${Environment}-${StackIdentifier}"
+                }
+            }
+        }
+    }
+}

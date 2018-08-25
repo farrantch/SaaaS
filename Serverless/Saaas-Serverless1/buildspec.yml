@@ -1,0 +1,13 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo Installing Serverless...
+      - npm install serverless -g
+      - echo Installing Dependencies...
+      - npm install --save
+  build:
+    commands:
+      - echo Deploying Serverless
+      - serverless deploy -s $ServerlessStage --force

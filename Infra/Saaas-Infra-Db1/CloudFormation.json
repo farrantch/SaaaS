@@ -1,0 +1,146 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "SaaaS Backend Infrastructure",
+    "Parameters": {
+        "Environment": {
+            "Type": "String",
+            "Default": "Dev"
+        },
+        "StackIdentifier": {
+            "Type": "String",
+            "Default": "1"
+        },
+        "DynamoDbTableUsersThroughputWrite": {
+            "Type": "Number",
+            "Default": 1
+        },
+        "DynamoDbTableUsersThroughputRead": {
+            "Type": "Number",
+            "Default": 1
+        },
+        "DynamoDbTableCloudAccountsThroughputWrite": {
+            "Type": "Number",
+            "Default": 1
+        },
+        "DynamoDbTableCloudAccountsThroughputRead": {
+            "Type": "Number",
+            "Default": 1
+        },
+        "DynamoDbTableTransactionsThroughputWrite": {
+            "Type": "Number",
+            "Default": 1
+        },
+        "DynamoDbTableTransactionsThroughputRead": {
+            "Type": "Number",
+            "Default": 1
+        }
+    },
+    "Resources": {
+        "DynamoDbTableUsers": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "AttributeDefinitions": [{
+                    "AttributeName": "userId",
+                    "AttributeType": "S"
+                }],
+                "KeySchema": [{
+                    "AttributeName": "userId",
+                    "KeyType": "HASH"
+                }],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": {
+                        "Ref": "DynamoDbTableUsersThroughputRead"
+                    },
+                    "WriteCapacityUnits": {
+                        "Ref": "DynamoDbTableUsersThroughputWrite"
+                    }
+                },
+                "SSESpecification": {
+                    "SSEEnabled": true
+                }
+            }
+        },
+        "DynamoDbTableTransactions": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "AttributeDefinitions": [{
+                        "AttributeName": "userId_yearMonth",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "dateTime_transactionId",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [{
+                        "AttributeName": "userId_yearMonth",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "dateTime_transactionId",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": {
+                        "Ref": "DynamoDbTableTransactionsThroughputRead"
+                    },
+                    "WriteCapacityUnits": {
+                        "Ref": "DynamoDbTableTransactionsThroughputWrite"
+                    }
+                },
+                "SSESpecification": {
+                    "SSEEnabled": true
+                }
+            }
+        },
+        "DynamoDbTableCloudAccounts": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "AttributeDefinitions": [{
+                        "AttributeName": "userId",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "accountId",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [{
+                        "AttributeName": "userId",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "accountId",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": {
+                        "Ref": "DynamoDbTableCloudAccountsThroughputRead"
+                    },
+                    "WriteCapacityUnits": {
+                        "Ref": "DynamoDbTableCloudAccountsThroughputWrite"
+                    }
+                },
+                "SSESpecification": {
+                    "SSEEnabled": true
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "DynamoDbTableNameTransactions": {
+            "Value": { "Ref": "DynamoDbTableTransactions" },
+            "Export": { "Name": { "Fn::Sub": "Saaas-DynamoDbTableName-Transactions-${Environment}-${StackIdentifier}" } }
+        },
+        "DynamoDbTableNameCloudAccounts": {
+            "Value": { "Ref": "DynamoDbTableCloudAccounts" },
+            "Export": { "Name": { "Fn::Sub": "Saaas-DynamoDbTableName-CloudAccounts-${Environment}-${StackIdentifier}" } }
+        },
+        "DynamoDbTableNameUsers": {
+            "Value": { "Ref": "DynamoDbTableUsers" },
+            "Export": { "Name": { "Fn::Sub": "Saaas-DynamoDbTableName-Users-${Environment}-${StackIdentifier}" } }
+        }
+    }
+}

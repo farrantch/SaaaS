@@ -1,0 +1,143 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Template for CloudAccountDistributer Lambda.",
+  "Parameters": {
+    "Environment": {
+      "Type": "String",
+      "Default": "Dev"
+    },
+    "StackIdentifier": {
+      "Type": "String",
+      "Default": "1"
+    },
+    "S3BucketName": {
+      "Type": "String"
+    },
+    "S3ObjectKey": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "IamPolicy": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+              "Effect": "Allow",
+              "Action": ["logs:*"],
+              "Resource": "arn:aws:logs:*:*:*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "lambda:InvokeFunction"
+              ],
+              "Resource": [
+                {
+                  "Fn::Sub": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "IamRole": {
+      "DependsOn": "IamPolicy",
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }]
+        },
+        "ManagedPolicyArns": [{
+          "Ref": "IamPolicy"
+        }]
+      }
+    },
+    "Lambda": {
+      "DependsOn": ["IamRole"],
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "S3BucketName"
+          },
+          "S3Key": {
+            "Ref": "S3ObjectKey"
+          }
+        },
+        "Handler": "CloudAccountDistributer.lambda_handler",
+        "Role": {
+          "Fn::GetAtt": ["IamRole", "Arn"]
+        },
+        "Runtime": "python3.6",
+        "Timeout": "300",
+        "Environment": {
+          "Variables": {
+            "LambdaArnEc2Start": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "Saaas-LambdaArn-Ec2Start-${Environment}-1"
+              }
+            },
+            "LambdaArnEc2Stop": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "Saaas-LambdaArn-Ec2Stop-${Environment}-1"
+              }
+            },
+            "LambdaArnEc2Reboot": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "Saaas-LambdaArn-Ec2Reboot-${Environment}-1"
+              }
+            },
+            "LambdaArnEc2BackupManager": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "Saaas-LambdaArn-Ec2BackupManager-${Environment}-1"
+              }
+            },
+            "LambdaArnRdsStart": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "Saaas-LambdaArn-RdsStart-${Environment}-1"
+              }
+            },
+            "LambdaArnRdsStop": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "Saaas-LambdaArn-RdsStop-${Environment}-1"
+              }
+            },
+            "LambdaArnRdsReboot": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "Saaas-LambdaArn-RdsReboot-${Environment}-1"
+              }
+            },
+            "LambdaArnRdsBackupManager": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "Saaas-LambdaArn-RdsBackupManager-${Environment}-1"
+              }
+            }
+          }
+        },
+        "Description": "Distributes Lambda innovocations recieved from the DBScanner."
+      }
+    }
+  },
+  "Outputs": {
+    "LambdaCloudAccountDistributer": {
+        "Value": {
+          "Fn::GetAtt": ["Lambda", "Arn"]
+        },
+        "Export": {
+          "Name": {
+            "Fn::Sub": "Saaas-LambdaArn-CloudAccountDistributer-${Environment}-${StackIdentifier}"
+          }
+        }
+    }
+  }
+}
