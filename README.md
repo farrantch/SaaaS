@@ -1,5 +1,5 @@
 # SaaaS
-Sysadmin-As-A-Service
+Sysadmin-As-A-Service - *Depricated*
 
 This project was started as an attempt to replicate my job of a sysadmin .... but as a service.
 
